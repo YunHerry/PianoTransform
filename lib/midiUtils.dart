@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:forui/forui.dart';
+
 class MidiEvent {
   final String type;
   final int channel;

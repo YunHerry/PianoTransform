@@ -1,28 +1,25 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:forui/forui.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'midiUtils.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const Application());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Application extends StatelessWidget {
+  const Application({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+    builder: (context, child) =>
+        FTheme(data: FThemes.zinc.light, child: child!),
+    home: FScaffold(child: MyHomePage(title: "FIRST")),
+  );
 }
 
 class MyHomePage extends StatefulWidget {
@@ -48,13 +45,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-     mIDICommand.stopScanningForBluetoothDevices();
+    mIDICommand.stopScanningForBluetoothDevices();
   }
 
   Future<void> _startScan() async {
     await _requestPermissions();
     mIDICommand.startScanningForBluetoothDevices();
-    _devicePollingTimer = Timer.periodic(Duration(seconds: 1), (_) async {
+    _devicePollingTimer = Timer.periodic(Duration(seconds: 4), (_) async {
       final devices = await mIDICommand.devices;
       if (devices != null) {
         setState(() {
@@ -62,6 +59,13 @@ class _MyHomePageState extends State<MyHomePage> {
             ..clear()
             ..addAll(devices);
         });
+        // showFToast(
+        //   context: context,
+        //   duration: null,
+        //   alignment: FToastAlignment.topLeft,
+        //   icon: const Icon(FIcons.triangleAlert),
+        //   title: const Text('扫描完成'),
+        // );
       }
     });
     // print(mIDICommand.dispose());
@@ -77,7 +81,6 @@ class _MyHomePageState extends State<MyHomePage> {
     //     });
     //   }
     // });
-
   }
 
   Future<void> _requestPermissions() async {
@@ -88,37 +91,74 @@ class _MyHomePageState extends State<MyHomePage> {
     ].request();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+    return FScaffold(
+      header: FHeader(
+        title: Padding(
+          padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
+          child: const Text('设备管理'),
+        ),
+        suffixes: [FHeaderAction(icon: Icon(FIcons.ellipsis), onPress: () {})],
       ),
-      body: ListView.builder(
+      child: ListView.separated(
         itemCount: _devices.length,
+
         itemBuilder: (context, index) {
           final device = _devices[index];
-          return ListTile(
+          return FTile(
+            prefix: Icon(FIcons.bell),
             title: Text(device.name.isNotEmpty ? device.name : "(未命名)"),
             subtitle: Text("ID: ${device.id}"),
+            suffix: Icon(FIcons.chevronRight),
             onLongPress: () {
-              mIDICommand.connectToDevice(device).then((dynamic _) async {
-                mIDICommand.onMidiDataReceived?.listen((packet) {
-                  onMidiDataReceived(packet.data);
-                });
-                mIDICommand.stopScanningForBluetoothDevices();
+              HapticFeedback.vibrate();
+              FocusScope.of(context).unfocus();
+              setState(() {
+                // 恢复颜色状态
               });
+              showFDialog(
+                context: context,
+                builder: (context, style, animation) => FDialog(
+                  style: style,
+                  animation: animation,
+                  direction: Axis.horizontal,
+                  title: const Text('是否连接 ?'),
+                  body: Text('你确定要将${device.name}绑定至本机吗?'),
+                  actions: [
+                    FButton(
+                      style: FButtonStyle.outline(),
+                      onPress: () => Navigator.of(context).pop(),
+                      child: const Text('取消'),
+                    ),
+                    FButton(
+                      onPress: () {
+                        mIDICommand.connectToDevice(device).then((
+                          dynamic _,
+                        ) async {
+                          showFToast(
+                            context: context,
+                            duration: null,
+                            alignment: FToastAlignment.topCenter,
+                            icon: const Icon(FIcons.triangleAlert),
+                            title: const Text('连接成功'),
+                          );
+                          mIDICommand.onMidiDataReceived?.listen((packet) {
+                            onMidiDataReceived(packet.data);
+                          });
+                          // mIDICommand.stopScanningForBluetoothDevices();
+                          _devicePollingTimer?.cancel();
+                        });
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('连接'),
+                    ),
+                  ],
+                ),
+              );
             },
           );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _startScan,
-        tooltip: '扫描设备',
-        child: const Icon(Icons.search),
+        }, separatorBuilder: (context, index) => SizedBox(height: 10),
       ),
     );
   }
