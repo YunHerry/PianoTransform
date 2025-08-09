@@ -6,7 +6,8 @@ import 'package:forui/forui.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
-import 'package:piano_transform/views/BLESearch.dart';
+import 'package:piano_transform/views/BLESearchPage.dart';
+import 'package:piano_transform/views/HomePage.dart';
 import 'midiUtils.dart';
 
 void main() {
@@ -37,15 +38,12 @@ class _ApplicationState extends State<Application> {
     builder: (context, child) =>
         FTheme(data: FThemes.zinc.light, child: child!),
     home: FScaffold(
-      child: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(), // 禁止滑动，只允许底部导航切换
-        children: const [BLESearchPage(title: "FIRST")],
-        onPageChanged: (i) => setState(() => index = i),
-      ),
       footer: FBottomNavigationBar(
         index: index,
-        onChange: (index) => setState(() => this.index = index),
+        onChange: (index) {
+          setState(() => this.index = index);
+          _pageController.jumpToPage(index);
+        },
         children: [
           FBottomNavigationBarItem(
             icon: Icon(FIcons.house),
@@ -68,6 +66,11 @@ class _ApplicationState extends State<Application> {
             label: const Text('Search'),
           ),
         ],
+      ),
+      child: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [Homepage(),BLESearchPage(title: "FIRST"),Homepage(),BLESearchPage(title: "FIRST"),Homepage()],
       ),
     ),
   );

@@ -8,6 +8,7 @@ import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../midiUtils.dart';
+
 class BLESearchPage extends StatefulWidget {
   const BLESearchPage({super.key, required this.title});
 
@@ -31,7 +32,9 @@ class _BLESearchPageState extends State<BLESearchPage> {
 
   @override
   void dispose() {
+    super.dispose();
     mIDICommand.stopScanningForBluetoothDevices();
+    _devicePollingTimer?.cancel();
   }
 
   Future<void> _startScan() async {
@@ -120,8 +123,8 @@ class _BLESearchPageState extends State<BLESearchPage> {
                     FButton(
                       onPress: () {
                         mIDICommand.connectToDevice(device).then((
-                            dynamic _,
-                            ) async {
+                          dynamic _,
+                        ) async {
                           showFToast(
                             context: context,
                             duration: null,
