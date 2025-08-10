@@ -65,7 +65,7 @@ class _HomepageState extends State<Homepage> {
         header: FHeader(
           title: Padding(
             padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
-            child: const Text('首页'),
+            child: const Text('首页',style: TextStyle(fontSize: 21),),
           ),
           suffixes: [
             FHeaderAction(icon: Icon(FIcons.ellipsis), onPress: () {})

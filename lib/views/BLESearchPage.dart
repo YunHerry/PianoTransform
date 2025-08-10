@@ -85,71 +85,75 @@ class _BLESearchPageState extends State<BLESearchPage> {
     return FScaffold(
       header: FHeader(
         title: Padding(
-          padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
-          child: const Text('设备管理'),
+          padding: const EdgeInsets.only(top: 16.0),
+          child: const Text('设备管理',style: TextStyle(fontSize: 21),),
         ),
-        suffixes: [FHeaderAction(icon: Icon(FIcons.ellipsis), onPress: () {})],
       ),
-      child: ListView.separated(
-        itemCount: _devices.length,
+      child: _devices.isEmpty
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [FProgress.circularIcon(), Text("正在扫描设备...")],
+            )
+          : ListView.separated(
+              itemCount: _devices.length,
 
-        itemBuilder: (context, index) {
-          final device = _devices[index];
-          return FTile(
-            prefix: Icon(FIcons.bell),
-            title: Text(device.name.isNotEmpty ? device.name : "(未命名)"),
-            subtitle: Text("ID: ${device.id}"),
-            suffix: Icon(FIcons.chevronRight),
-            onLongPress: () {
-              HapticFeedback.vibrate();
-              FocusScope.of(context).unfocus();
-              setState(() {
-                // 恢复颜色状态
-              });
-              showFDialog(
-                context: context,
-                builder: (context, style, animation) => FDialog(
-                  style: style,
-                  animation: animation,
-                  direction: Axis.horizontal,
-                  title: const Text('是否连接 ?'),
-                  body: Text('你确定要将${device.name}绑定至本机吗?'),
-                  actions: [
-                    FButton(
-                      style: FButtonStyle.outline(),
-                      onPress: () => Navigator.of(context).pop(),
-                      child: const Text('取消'),
-                    ),
-                    FButton(
-                      onPress: () {
-                        mIDICommand.connectToDevice(device).then((
-                          dynamic _,
-                        ) async {
-                          showFToast(
-                            context: context,
-                            duration: null,
-                            alignment: FToastAlignment.topCenter,
-                            icon: const Icon(FIcons.triangleAlert),
-                            title: const Text('连接成功'),
-                          );
-                          mIDICommand.onMidiDataReceived?.listen((packet) {
-                            onMidiDataReceived(packet.data);
-                          });
-                          // mIDICommand.stopScanningForBluetoothDevices();
-                          _devicePollingTimer?.cancel();
-                        });
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('连接'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-        separatorBuilder: (context, index) => SizedBox(height: 10),
-      ),
+              itemBuilder: (context, index) {
+                final device = _devices[index];
+                return FTile(
+                  prefix: Icon(FIcons.bell),
+                  title: Text(device.name.isNotEmpty ? device.name : "(未命名)"),
+                  subtitle: Text("ID: ${device.id}"),
+                  suffix: Icon(FIcons.chevronRight),
+                  onLongPress: () {
+                    HapticFeedback.vibrate();
+                    FocusScope.of(context).unfocus();
+                    setState(() {});
+                    showFDialog(
+                      context: context,
+                      builder: (context, style, animation) => FDialog(
+                        style: style,
+                        animation: animation,
+                        direction: Axis.horizontal,
+                        title: const Text('是否连接 ?'),
+                        body: Text('你确定要将${device.name}绑定至本机吗?'),
+                        actions: [
+                          FButton(
+                            style: FButtonStyle.outline(),
+                            onPress: () => Navigator.of(context).pop(),
+                            child: const Text('取消'),
+                          ),
+                          FButton(
+                            onPress: () {
+                              mIDICommand.connectToDevice(device).then((
+                                dynamic _,
+                              ) async {
+                                showFToast(
+                                  context: context,
+                                  duration: null,
+                                  alignment: FToastAlignment.topCenter,
+                                  icon: const Icon(FIcons.triangleAlert),
+                                  title: const Text('连接成功'),
+                                );
+                                mIDICommand.onMidiDataReceived?.listen((
+                                  packet,
+                                ) {
+                                  onMidiDataReceived(packet.data);
+                                });
+                                // mIDICommand.stopScanningForBluetoothDevices();
+                                _devicePollingTimer?.cancel();
+                              });
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('连接'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              separatorBuilder: (context, index) => SizedBox(height: 10),
+            ),
     );
   }
 }
