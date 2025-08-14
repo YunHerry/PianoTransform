@@ -6,9 +6,11 @@ import 'package:forui/forui.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
+import 'package:piano_transform/provider/BLEProvider.dart';
 import 'package:piano_transform/views/BLESearchPage.dart';
 import 'package:piano_transform/views/HomePage.dart';
 import 'package:piano_transform/views/SettingPage.dart';
+import 'package:provider/provider.dart';
 import 'midiUtils.dart';
 
 void main() {
@@ -69,12 +71,20 @@ class _ApplicationState extends State<Application> {
           ),
         ],
       ),
-      child: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: const [Homepage(),BLESearchPage(title: "FIRST"),Homepage(),BLESearchPage(title: "FIRST"),SettingPage()],
+      child: ChangeNotifierProvider(
+        create: (context) => BLEProvider(),
+        child: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            Homepage(),
+            BLESearchPage(title: "FIRST"),
+            Homepage(),
+            BLESearchPage(title: "FIRST"),
+            SettingPage(),
+          ],
+        ),
       ),
     ),
   );
 }
-

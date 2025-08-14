@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:forui/forui.dart';
+import 'package:piano_transform/provider/BLEProvider.dart';
+import 'package:provider/provider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -53,25 +55,19 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double screenHeight = MediaQuery
-        .of(context)
-        .size
-        .height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
     return FScaffold(
-        header: FHeader(
-          title: Padding(
-            padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
-            child: const Text('首页',style: TextStyle(fontSize: 21),),
-          ),
-          suffixes: [
-            FHeaderAction(icon: Icon(FIcons.ellipsis), onPress: () {})
-          ],
+      header: FHeader(
+        title: Padding(
+          padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
+          child: const Text('首页', style: TextStyle(fontSize: 21)),
         ),
-        child: Padding(padding: EdgeInsets.only(top: 20), child: Column(
+        suffixes: [FHeaderAction(icon: Icon(FIcons.ellipsis), onPress: () {})],
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(top: 20),
+        child: Column(
           children: [
             Row(
               children: [
@@ -79,11 +75,24 @@ class _HomepageState extends State<Homepage> {
                   width: screenWidth * 0.5,
                   height: screenHeight * 0.4,
                   child: FButton(
-                    onPress: () {
+                    onPress: () async {
                       if (isStart) {
                         _stopTimer();
+                        Provider.of<BLEProvider>(
+                          context,
+                          listen: false,
+                        ).stopMidiRecording();
+                        String data = await Provider.of<BLEProvider>(
+                          context,
+                          listen: false,
+                        ).saveMidiFile(fileName: "test.midi");
+                        print("已经保存到: $data");
                       } else {
                         _startTimer();
+                        Provider.of<BLEProvider>(
+                          context,
+                          listen: false,
+                        ).startMidiRecording();
                       }
                       setState(() {
                         isStart = !isStart;
@@ -108,7 +117,8 @@ class _HomepageState extends State<Homepage> {
               ],
             ),
           ],
-        ) ,)
+        ),
+      ),
     );
   }
 }

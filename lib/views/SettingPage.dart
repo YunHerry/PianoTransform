@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:forui/forui.dart';
+import 'package:piano_transform/provider/BLEProvider.dart';
+import 'package:provider/provider.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -24,7 +26,7 @@ class _SettingPageState extends State<SettingPage> {
       header: FHeader(
         title: Padding(
           padding: const EdgeInsets.only(top: 16.0), // 向下偏移8像素
-          child: const Text('设置',style: TextStyle(fontSize: 21),),
+          child: const Text('设置', style: TextStyle(fontSize: 21)),
         ),
       ),
       child: Column(

@@ -25,6 +25,7 @@ dependencies:
   forui: ^0.14.1
   flutter_midi_command: ^0.5.3
   logger: ^2.6.1
+  provider: ^6.1.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
