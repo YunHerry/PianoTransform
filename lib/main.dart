@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import 'package:piano_transform/provider/BLEProvider.dart';
 import 'package:piano_transform/views/BLESearchPage.dart';
+import 'package:piano_transform/views/FileListPage.dart';
 import 'package:piano_transform/views/HomePage.dart';
 import 'package:piano_transform/views/SettingPage.dart';
 import 'package:provider/provider.dart';
@@ -79,7 +80,7 @@ class _ApplicationState extends State<Application> {
           children: const [
             Homepage(),
             BLESearchPage(title: "FIRST"),
-            Homepage(),
+            FileListPage(),
             BLESearchPage(title: "FIRST"),
             SettingPage(),
           ],
