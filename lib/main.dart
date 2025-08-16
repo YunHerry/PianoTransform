@@ -12,9 +12,12 @@ import 'package:piano_transform/views/FileListPage.dart';
 import 'package:piano_transform/views/HomePage.dart';
 import 'package:piano_transform/views/SettingPage.dart';
 import 'package:provider/provider.dart';
+import 'SettingsManager.dart';
 import 'midiUtils.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SettingsManager().init();
   runApp(const Application());
 }
 
