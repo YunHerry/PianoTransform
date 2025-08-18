@@ -23,7 +23,7 @@ class _SettingPageState extends State<SettingPage> {
     _controller = FAccordionController(max: 1);
     _initialSelection = FSliderSelection(max: 1);
     _continuousSliderController = FContinuousSliderController(
-      selection: FSliderSelection(max: _settingsManager.volume),
+      selection: FSliderSelection(max: _settingsManager.velocityMultiplier),
     );
   }
 

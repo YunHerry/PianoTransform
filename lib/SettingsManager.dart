@@ -8,16 +8,16 @@ class SettingsManager {
   factory SettingsManager() => _instance;
   SettingsManager._internal();
   late String _themeColor;
-  late double _volume;
-  double get volume => _volume;
+  late double _velocityMultiplier;
+  double get velocityMultiplier => _velocityMultiplier;
   late final SharedPreferences sharedPreferences;
     Future<void> init() async {
       sharedPreferences = await SharedPreferences.getInstance();
       _themeColor = sharedPreferences.getString("themeColor") ?? "follow";
-      _volume =  sharedPreferences.getDouble("volume") ?? 0;
+      _velocityMultiplier =  sharedPreferences.getDouble("velocityMultiplier") ?? 0;
     }
     void setDouble(String key,double value) {
       sharedPreferences.setDouble(key, value);
-      _volume = value;
+      _velocityMultiplier = value;
     }
 }

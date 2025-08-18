@@ -85,7 +85,7 @@ class _HomepageState extends State<Homepage> {
                         String data = await Provider.of<BLEProvider>(
                           context,
                           listen: false,
-                        ).saveMidiFile(fileName: "test.midi");
+                        ).saveMidiFile();
                         print("已经保存到: $data");
                       } else {
                         _startTimer();

@@ -1,28 +1,42 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import '../SettingsManager.dart';
 import '../midiUtils.dart';
 import '../provider/BLEProvider.dart';
+
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
 
 class MidiFileGenerator {
   final List<TimedMidiEvent> _events = [];
   late DateTime _startTime;
   bool _isRecording = false;
 
-  // MIDI文件参数
-  final int _ticksPerQuarter = 480; // 每四分音符的tick数
+  // 直接使用SettingsManager实例
+  final SettingsManager _settings = SettingsManager();
+
+  // MIDI文件参数 - 从设置获取
+  int get _ticksPerQuarter => _settings.sharedPreferences.getInt("midiQuality") ?? 480;
   final int _tempo = 500000; // 默认tempo (120 BPM)
 
   void startRecording() {
     _isRecording = true;
     _startTime = DateTime.now();
     _events.clear();
-    print('开始录制MIDI...');
+    print('开始录制MIDI... 质量设置: ${_ticksPerQuarter} ticks/quarter');
   }
 
   void stopRecording() {
     _isRecording = false;
     print('停止录制MIDI，共录制 ${_events.length} 个事件');
+
+    // 检查自动保存设置
+    final autoSave = _settings.sharedPreferences.getBool("autoSave") ?? false;
+    if (autoSave && _events.isNotEmpty) {
+      _autoSave();
+    }
   }
 
   void addMidiEvent(MidiEvent event) {
@@ -31,19 +45,79 @@ class MidiFileGenerator {
     final currentTime = DateTime.now();
     final deltaTime = currentTime.difference(_startTime).inMilliseconds;
 
+    // 应用力度增强 - 从设置获取倍数
+    final velocityMultiplier = _settings.sharedPreferences.getDouble("velocityMultiplier") ?? 1.0;
+    final enhancedEvent = _applyVelocityBoost(event, velocityMultiplier + 1);
+
     final timedEvent = TimedMidiEvent(
-      event: event,
+      event: enhancedEvent,
       timestamp: deltaTime,
     );
 
     _events.add(timedEvent);
-    print('录制事件: ${event.toString()} at ${deltaTime}ms');
+    print('录制事件: ${enhancedEvent.toString()} at ${deltaTime}ms (增强${velocityMultiplier}x)');
+  }
+
+  // 应用力度增强
+  MidiEvent _applyVelocityBoost(MidiEvent event, double multiplier) {
+    if (event.type == 'Note On' || event.type == 'Note Off') {
+      final boostedVelocity = (event.velocity * multiplier).round().clamp(0, 127);
+      return MidiEvent(
+        type: event.type,
+        channel: event.channel,
+        note: event.note,
+        velocity: boostedVelocity,
+      );
+    }
+    return event;
+  }
+
+  // 自动保存功能
+  Future<void> _autoSave() async {
+    try {
+      final saveLocation = await _getDefaultSaveLocation();
+      final fileName = _generateAutoFileName();
+      final filePath = '$saveLocation/$fileName';
+      await saveMidiFile(filePath);
+      print('自动保存完成: $filePath');
+    } catch (e) {
+      print('自动保存失败: $e');
+    }
+  }
+
+  // 获取默认保存位置
+  Future<String> _getDefaultSaveLocation() async {
+    // 先从设置中获取
+    final savedLocation = _settings.sharedPreferences.getString("defaultSaveLocation");
+    if (savedLocation != null && savedLocation.isNotEmpty) {
+      return savedLocation;
+    }
+
+    // 如果没有设置，创建默认位置
+    final directory = await getApplicationDocumentsDirectory();
+    final midiFolder = Directory('${directory.path}/midi_recordings');
+    if (!await midiFolder.exists()) {
+      await midiFolder.create(recursive: true);
+    }
+
+    // 保存默认位置到设置
+    await _settings.sharedPreferences.setString("defaultSaveLocation", midiFolder.path);
+    return midiFolder.path;
+  }
+
+  // 生成自动保存文件名
+  String _generateAutoFileName() {
+    final now = DateTime.now();
+    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
+        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    return 'midi_recording_$timestamp.mid';
   }
 
   Future<File> saveMidiFile(String filePath) async {
     print('=== saveMidiFile开始执行 ===');
     print('文件路径: $filePath');
     print('事件数量: ${_events.length}');
+    print('设置 - 质量: ${_ticksPerQuarter}, 力度增强: ${_settings.sharedPreferences.getDouble("velocityMultiplier") ?? 1.0}x');
 
     if (_events.isEmpty) {
       print('错误: 没有MIDI事件可保存');
@@ -74,6 +148,10 @@ class MidiFileGenerator {
         final fileSize = await file.length();
         print('MIDI文件已保存到: $filePath');
         print('文件大小验证: $fileSize bytes');
+
+        // 保存最后保存位置到设置
+        await _settings.sharedPreferences.setString("lastSavedFile", filePath);
+
         return file;
       } else {
         print('错误: 文件写入后不存在');
@@ -85,6 +163,21 @@ class MidiFileGenerator {
       print('错误类型: ${e.runtimeType}');
       rethrow;
     }
+  }
+
+  // 快速保存到默认位置
+  Future<File> quickSave() async {
+    final saveLocation = await _getDefaultSaveLocation();
+    final fileName = _generateAutoFileName();
+    final filePath = '$saveLocation/$fileName';
+    return await saveMidiFile(filePath);
+  }
+
+  // 获取推荐保存路径
+  Future<String> getRecommendedFilePath([String? customName]) async {
+    final saveLocation = await _getDefaultSaveLocation();
+    final fileName = customName ?? _generateAutoFileName();
+    return '$saveLocation/$fileName';
   }
 
   Uint8List _generateMidiFile() {
@@ -118,7 +211,7 @@ class MidiFileGenerator {
     // 轨道数量
     header.setUint16(10, 1);
 
-    // 时间分辨率 (每四分音符的tick数)
+    // 时间分辨率 (每四分音符的tick数) - 从设置获取
     header.setUint16(12, _ticksPerQuarter);
 
     return header.buffer.asUint8List();
@@ -216,6 +309,37 @@ class MidiFileGenerator {
     return (milliseconds * _ticksPerQuarter * 1000) ~/ _tempo;
   }
 
+  // === 新增的便捷方法 ===
+
+  // 获取当前设置摘要
+  String getSettingsSummary() {
+    final quality = _settings.sharedPreferences.getInt("midiQuality") ?? 480;
+    final velocity = _settings.sharedPreferences.getDouble("velocityMultiplier") ?? 1.0;
+    final autoSave = _settings.sharedPreferences.getBool("autoSave") ?? false;
+    return '质量:${quality} | 力度增强:${velocity}x | 自动保存:${autoSave ? "开" : "关"}';
+  }
+
+  // 更新设置的便捷方法
+  Future<void> updateMidiQuality(int quality) async {
+    await _settings.sharedPreferences.setInt("midiQuality", quality);
+    print('MIDI质量已更新为: $quality ticks/quarter');
+  }
+
+  Future<void> updateVelocityMultiplier(double multiplier) async {
+    await _settings.sharedPreferences.setDouble("velocityMultiplier", multiplier);
+    print('力度增强倍数已更新为: ${multiplier}x');
+  }
+
+  Future<void> updateAutoSave(bool enabled) async {
+    await _settings.sharedPreferences.setBool("autoSave", enabled);
+    print('自动保存已${enabled ? "开启" : "关闭"}');
+  }
+
+  Future<void> updateDefaultSaveLocation(String path) async {
+    await _settings.sharedPreferences.setString("defaultSaveLocation", path);
+    print('默认保存位置已更新为: $path');
+  }
+
   // 获取当前录制的事件数量
   int get eventCount => _events.length;
 
@@ -232,24 +356,19 @@ class MidiFileGenerator {
     if (_events.isEmpty) return 0;
     return _events.last.timestamp;
   }
-}
 
-class TimedMidiEvent {
-  final MidiEvent event;
-  final int timestamp; // 毫秒
-
-  TimedMidiEvent({
-    required this.event,
-    required this.timestamp,
-  });
-
-  @override
-  String toString() {
-    return '${event.toString()} @ ${timestamp}ms';
+  // 获取录制状态信息
+  Map<String, dynamic> getRecordingInfo() {
+    return {
+      'isRecording': _isRecording,
+      'eventCount': _events.length,
+      'duration': recordingDuration,
+      'settings': getSettingsSummary(),
+    };
   }
 }
 
-// 扩展原有的BLEProvider
+// 扩展原有的BLEProvider - 保持原来的结构
 extension BLEProviderMidiFile on BLEProvider {
   static final MidiFileGenerator _midiGenerator = MidiFileGenerator();
 
@@ -267,15 +386,43 @@ extension BLEProviderMidiFile on BLEProvider {
     return await _midiGenerator.saveMidiFile(filePath);
   }
 
-  // 修改onMidiDataReceived方法来同时录制
+  Future<File> quickSaveMidi() async {
+    return await _midiGenerator.quickSave();
+  }
+
+  // 修改原有的方法，增加设置集成
   void onMidiDataReceivedWithRecording(Uint8List data) {
     final event = parseMidiPacket(data);
     if (event != null) {
-      print(event);
-      // 添加到MIDI文件生成器
+      print('原始事件: $event');
+
+      // 添加到MIDI文件生成器（会自动应用设置中的增强）
       _midiGenerator.addMidiEvent(event);
+
     } else {
       print('无法识别的MIDI消息: ${data.map((b) => b.toRadixString(16).padLeft(2,'0')).join(' ')}');
     }
+  }
+
+  // 获取录制状态
+  String getRecordingStatus() {
+    final info = _midiGenerator.getRecordingInfo();
+    return '${info['isRecording'] ? "录制中" : "待机"} | 事件:${info['eventCount']} | ${info['settings']}';
+  }
+}
+
+// 保持原有的数据类不变
+class TimedMidiEvent {
+  final MidiEvent event;
+  final int timestamp; // 毫秒
+
+  TimedMidiEvent({
+    required this.event,
+    required this.timestamp,
+  });
+
+  @override
+  String toString() {
+    return '${event.toString()} @ ${timestamp}ms';
   }
 }
