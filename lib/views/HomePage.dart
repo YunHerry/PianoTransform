@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:piano_transform/provider/BLEProvider.dart';
 import 'package:provider/provider.dart';
@@ -35,8 +36,54 @@ class _HomepageState extends State<Homepage> {
     setState(() {
       if (_startTime != null) {
         _elapsed = DateTime.now().difference(_startTime!);
+        _startTime = null;
       }
     });
+  }
+
+  void _startRecord() {
+    Provider.of<BLEProvider>(context, listen: false)
+        .startMidiRecording()
+        .then((_) {
+          _startTimer();
+          isStart = true;
+        })
+        .catchError((error) {
+          showFToast(
+            context: context,
+            duration: Duration(seconds: 1),
+            alignment: FToastAlignment.topCenter,
+            icon: Icon(FIcons.messageSquareWarning, color: Colors.yellow[800]),
+            title: Text(error.toString().replaceFirst('Exception: ', '')),
+          );
+        });
+  }
+
+  void _stopRecord() {
+    _stopTimer();
+    isStart = false;
+    Provider.of<BLEProvider>(context, listen: false).stopMidiRecording();
+    Provider.of<BLEProvider>(context, listen: false)
+        .saveMidiFile()
+        .then((data) {
+          if (!context.mounted) return;
+          showFToast(
+            context: context,
+            duration: Duration(seconds: 3),
+            alignment: FToastAlignment.topCenter,
+            icon: const Icon(FIcons.triangleAlert),
+            title: Text('录制完成,保存到: $data'),
+          );
+        })
+        .catchError((error) {
+          showFToast(
+            context: context,
+            duration: null,
+            alignment: FToastAlignment.topCenter,
+            icon: const Icon(FIcons.triangleAlert),
+            title: Text(error.toString().replaceFirst('Exception: ', '')),
+          );
+        });
   }
 
   @override
@@ -76,27 +123,12 @@ class _HomepageState extends State<Homepage> {
                   height: screenHeight * 0.4,
                   child: FButton(
                     onPress: () async {
-                      if (isStart) {
-                        _stopTimer();
-                        Provider.of<BLEProvider>(
-                          context,
-                          listen: false,
-                        ).stopMidiRecording();
-                        String data = await Provider.of<BLEProvider>(
-                          context,
-                          listen: false,
-                        ).saveMidiFile();
-                        print("已经保存到: $data");
+                      if (!isStart) {
+                        _startRecord();
                       } else {
-                        _startTimer();
-                        Provider.of<BLEProvider>(
-                          context,
-                          listen: false,
-                        ).startMidiRecording();
+                        _stopRecord();
                       }
-                      setState(() {
-                        isStart = !isStart;
-                      });
+                      setState(() {});
                     },
                     child: Align(
                       alignment: Alignment.center, // 或 Alignment.topCenter，自己调
@@ -108,7 +140,10 @@ class _HomepageState extends State<Homepage> {
                             style: TextStyle(fontSize: 36),
                           ),
                           SizedBox(height: 30),
-                          Text('开始录制', style: TextStyle(fontSize: 36)),
+                          Text(
+                            isStart ? '结束录制' : '开始录制',
+                            style: TextStyle(fontSize: 36),
+                          ),
                         ],
                       ),
                     ),

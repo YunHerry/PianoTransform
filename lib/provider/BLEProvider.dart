@@ -12,7 +12,7 @@ class BLEProvider extends ChangeNotifier {
   final _mIDICommand = MidiCommand();
   final List<MidiDevice> devices = [];
   Timer? _devicePollingTimer;
-
+  MidiDevice? _nowConnectedDevice;
   // MIDI文件生成器
   final MidiFileGenerator _midiGenerator = MidiFileGenerator();
 
@@ -68,6 +68,7 @@ class BLEProvider extends ChangeNotifier {
 
       _devicePollingTimer?.cancel();
       _toastMessage = '连接成功';
+      _nowConnectedDevice = device;
       notifyListeners();
 
     } catch (error) {
@@ -78,7 +79,10 @@ class BLEProvider extends ChangeNotifier {
   }
 
   // 开始录制MIDI
-  void startMidiRecording() {
+  Future<void> startMidiRecording() async {
+    if (_nowConnectedDevice == null) {
+      throw Exception('你还没有连接设备!');
+    }
     _midiGenerator.startRecording();
     _isRecording = true;
     _toastMessage = '开始录制MIDI';
@@ -96,6 +100,7 @@ class BLEProvider extends ChangeNotifier {
   // 保存MIDI文件
   Future<String> saveMidiFile({String? fileName}) async {
     try {
+
       if (_midiGenerator.eventCount == 0) {
         throw Exception('没有MIDI数据可保存');
       }

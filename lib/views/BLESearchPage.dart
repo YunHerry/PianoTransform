@@ -96,7 +96,7 @@ class _BLESearchPageState extends State<BLESearchPage> {
                                   if (!context.mounted) return;
                                   showFToast(
                                     context: scaffoldContext,
-                                    duration: null,
+                                      duration: Duration(seconds: 2),
                                     alignment: FToastAlignment.topCenter,
                                     icon: const Icon(FIcons.triangleAlert),
                                     title: const Text('连接成功'),
