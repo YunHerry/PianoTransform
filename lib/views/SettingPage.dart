@@ -64,7 +64,7 @@ class _SettingPageState extends State<SettingPage> {
                           FSliderMark(value: 0.75, tick: false),
                           FSliderMark(value: 1, label: Text('100%')),],
                         onChange: (selection) {
-                          _settingsManager.setDouble("volume", selection.offset.max);
+                          _settingsManager.setDouble("velocityMultiplier", selection.offset.max);
                         },
                       ),
                     ],
