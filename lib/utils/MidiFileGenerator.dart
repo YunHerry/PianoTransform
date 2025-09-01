@@ -45,8 +45,8 @@ class MidiFileGenerator {
     final currentTime = DateTime.now();
     final deltaTime = currentTime.difference(_startTime).inMilliseconds;
 
-    // 应用力度增强 - 从设置获取倍数
     final velocityMultiplier = _settings.sharedPreferences.getDouble("velocityMultiplier") ?? 1.0;
+    // print(velocityMultiplier);
     final enhancedEvent = _applyVelocityBoost(event, velocityMultiplier + 1);
 
     final timedEvent = TimedMidiEvent(
@@ -388,20 +388,6 @@ extension BLEProviderMidiFile on BLEProvider {
 
   Future<File> quickSaveMidi() async {
     return await _midiGenerator.quickSave();
-  }
-
-  // 修改原有的方法，增加设置集成
-  void onMidiDataReceivedWithRecording(Uint8List data) {
-    final event = parseMidiPacket(data);
-    if (event != null) {
-      print('原始事件: $event');
-
-      // 添加到MIDI文件生成器（会自动应用设置中的增强）
-      _midiGenerator.addMidiEvent(event);
-
-    } else {
-      print('无法识别的MIDI消息: ${data.map((b) => b.toRadixString(16).padLeft(2,'0')).join(' ')}');
-    }
   }
 
   // 获取录制状态

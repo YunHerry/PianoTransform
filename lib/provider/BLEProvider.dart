@@ -13,6 +13,7 @@ class BLEProvider extends ChangeNotifier {
   final List<MidiDevice> devices = [];
   Timer? _devicePollingTimer;
   MidiDevice? _nowConnectedDevice;
+
   // MIDI文件生成器
   final MidiFileGenerator _midiGenerator = MidiFileGenerator();
 
@@ -63,7 +64,8 @@ class BLEProvider extends ChangeNotifier {
 
       // 设置MIDI数据接收监听
       _mIDICommand.onMidiDataReceived?.listen((packet) {
-        _onMidiDataReceived(packet.data);
+        // _onMidiDataReceived(packet.data);
+        onMidiDataReceivedWithRecording(packet.data);
       });
 
       _devicePollingTimer?.cancel();
@@ -132,13 +134,14 @@ class BLEProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 处理接收到的MIDI数据
-  void _onMidiDataReceived(Uint8List data) {
+  // 修改原有的方法，增加设置集成
+  void onMidiDataReceivedWithRecording(Uint8List data) {
     final event = parseMidiPacket(data);
     if (event != null) {
-      print(event);
-
-      // 如果正在录制，添加到MIDI文件生成器
+      print('原始事件: $event');
+      //
+      // // 添加到MIDI文件生成器（会自动应用设置中的增强）
+      // _midiGenerator.addMidiEvent(event);
       if (_isRecording) {
         _midiGenerator.addMidiEvent(event);
         notifyListeners(); // 通知UI更新事件计数
