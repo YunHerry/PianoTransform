@@ -16,7 +16,6 @@ class BLEProvider extends ChangeNotifier {
   Timer? _devicePollingTimer;
   MidiDevice? _nowConnectedDevice;
 
-  // 使用utils中的MidiFileGenerator
   final MidiFileGenerator _midiGenerator = MidiFileGenerator();
 
   // Toast状态
