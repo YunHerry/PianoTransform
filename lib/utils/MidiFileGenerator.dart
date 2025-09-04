@@ -60,11 +60,7 @@ class MidiFileGenerator {
   // 应用力度增强
   MidiEvent _applyVelocityBoost(MidiEvent event, double multiplier) {
     if (event.type == 'Note On' || event.type == 'Note Off') {
-      // 如果multiplier为0，表示不增强，直接返回原值
-      if (multiplier == 0) return event;
-
-      // 应用倍数增强：原值 * (1 + 增强倍数)
-      final boostedVelocity = (event.velocity * (1.0 + multiplier)).round().clamp(1, 127);
+      final boostedVelocity = (event.velocity * multiplier).round().clamp(0, 127);
       return MidiEvent(
         type: event.type,
         channel: event.channel,
@@ -72,6 +68,7 @@ class MidiFileGenerator {
         velocity: boostedVelocity,
       );
     }
+    // Control Change保持原样
     return event;
   }
 

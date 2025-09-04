@@ -132,12 +132,12 @@ class BLEProvider extends ChangeNotifier {
     final event = parseMidiPacket(data);
     if (event != null) {
       print('原始事件: $event');
-
       if (_isRecording) {
         _midiGenerator.addMidiEvent(event);
         notifyListeners(); // 通知UI更新事件计数
       }
     } else {
+
       print('无法识别的MIDI消息: ${data.map((b) => b.toRadixString(16).padLeft(2,'0')).join(' ')}');
     }
   }
